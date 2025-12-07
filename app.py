@@ -5,7 +5,7 @@ import os
 
 app = Flask(__name__)
 
-# Frases por emoción (igual que antes, NO TOQUÉ TUS FRASES)
+# Frases por emoción (IGUAL que las que ya tenías)
 EMOCIONES = {
     "ternura": [
         "Si existiera un botón para verte esos ojos ya lo hubiera roto por ti Ketsally",
@@ -52,23 +52,30 @@ DATA_FILE = "data.json"
 
 
 def load_state():
-    """Lee la última pregunta y respuesta desde data.json."""
+    """
+    Lee la última pregunta y respuesta desde data.json.
+    Si el archivo está corrupto o con mala codificación, regresa valores por defecto.
+    """
     if not os.path.exists(DATA_FILE):
         return {"pregunta": None, "respuesta": None}
+
     try:
-        with open(DATA_FILE, "r", encoding="utf-8") as f:
+        # errors="ignore" para evitar que reviente por bytes raros (como el 0xff)
+        with open(DATA_FILE, "r", encoding="utf-8", errors="ignore") as f:
             data = json.load(f)
-    except (json.JSONDecodeError, OSError):
+    except (json.JSONDecodeError, OSError, UnicodeDecodeError, ValueError):
         data = {"pregunta": None, "respuesta": None}
+
     if "pregunta" not in data:
         data["pregunta"] = None
     if "respuesta" not in data:
         data["respuesta"] = None
+
     return data
 
 
 def save_state(pregunta, respuesta):
-    """Guarda la última pregunta y respuesta en data.json."""
+    """Guarda la última pregunta y respuesta en data.json en UTF-8 limpio."""
     data = {"pregunta": pregunta, "respuesta": respuesta}
     with open(DATA_FILE, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False)
@@ -135,7 +142,7 @@ def miguel():
 def estado():
     """
     Devuelve la última pregunta y respuesta en JSON,
-    para que la página de ella pueda actualizarse sola sin recargar.
+    para que el front las pueda consultar y actualizar sin recargar.
     """
     state = load_state()
     return jsonify(state)

@@ -2,36 +2,42 @@
 <html lang="es">
 <head>
   <meta charset="utf-8">
-  <title>Panel de Miguel</title>
+  <title>Chat — Miguel</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
 </head>
 
 <body style="font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
              background: #111; color: #fff; padding: 24px;">
 
-  <h1>Panel de Miguel 😎</h1>
-  <p style="opacity:0.8;">Aquí ves lo que ella preguntó y mandas tu respuesta real.</p>
+  <h1>Chat (Miguel) 😎</h1>
+  <p style="opacity:0.8;">Aquí ves lo que <b>Ketzally</b> te envía y respondes sin salir de esta página.</p>
 
   <div style="margin-top:16px; padding:12px; border-radius:12px; background:#222;">
-    <div style="font-size:0.8rem; text-transform:uppercase; opacity:0.7;">Pregunta de Ketzally</div>
-    <div style="margin-top:4px;" id="preguntaTexto"></div>
+    <div style="font-size:0.8rem; text-transform:uppercase; opacity:0.7; color:#ff9bd2;">Mensaje de Ketzally 💜</div>
+    <div style="margin-top:4px; font-size:1rem;" id="preguntaTexto"></div>
   </div>
 
-  <form method="post" style="margin-top:18px;">
+  <form method="post" action="/miguel" style="margin-top:18px;">
     <label for="respuesta" style="display:block; margin-bottom:6px;">Tu respuesta para ella:</label>
     <textarea id="respuesta" name="respuesta"
       style="width:100%; max-width:480px; min-height:80px; border-radius:10px; padding:10px; border:none;"></textarea>
-    <div style="margin-top:10px;">
+
+    <div style="margin-top:10px; text-align:right;">
       <button type="submit"
         style="border:none; border-radius:999px; padding:10px 18px; font-weight:600;
         background:#ff9bd2; color:#2a1430; cursor:pointer;">
-        Guardar respuesta 💌
+        Enviar respuesta 💌
       </button>
     </div>
   </form>
 
+  <div id="respuestaBox" style="margin-top:20px; padding:12px; display:none; border-radius:12px; background:#223;">
+    <div style="font-size:0.8rem; text-transform:uppercase; opacity:0.7; color:#8ecdfc;">Tu respuesta (Miguel)</div>
+    <div id="respuestaTexto" style="margin-top:4px;"></div>
+  </div>
+
   <p style="margin-top:24px;">
-    <a href="/" style="color:#ff9bd2; text-decoration:none;">⬅ Regresar a la app</a>
+    <a href="/" style="color:#ff9bd2; text-decoration:none;">⬅ Ver cómo lo ve ella (modo Ketzally)</a>
   </p>
 
 <script>
@@ -39,10 +45,18 @@ function updatePanel() {
     fetch("/estado")
     .then(r => r.json())
     .then(data => {
-        document.getElementById("preguntaTexto").innerText = data.pregunta || "Aún no ha mandado nada 😅";
+        // Mostrar pregunta
+        document.getElementById("preguntaTexto").innerText = data.pregunta || "Todavía no ha escrito nada 😅";
+
+        // Mostrar respuesta si existe
+        if (data.respuesta) {
+            document.getElementById("respuestaTexto").innerText = data.respuesta;
+            document.getElementById("respuestaBox").style.display = "block";
+        }
     });
 }
 
+// actualizar cada 2 segundos
 setInterval(updatePanel, 2000);
 updatePanel();
 </script>

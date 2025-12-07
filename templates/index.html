@@ -166,19 +166,15 @@
         </div>
       </form>
 
-      {% if pregunta_ketzally %}
-        <div class="output">
-          <div class="tag">Tu pregunta</div>
-          <div>{{ pregunta_ketzally }}</div>
-        </div>
-      {% endif %}
+      <div class="output" id="preguntaBox" style="display:none;">
+        <div class="tag">Tu pregunta</div>
+        <div id="preguntaTexto"></div>
+      </div>
 
-      {% if respuesta_pregunta %}
-        <div class="output">
-          <div class="tag">Mi respuesta</div>
-          <div>{{ respuesta_pregunta }}</div>
-        </div>
-      {% endif %}
+      <div class="output" id="respuestaBox" style="display:none;">
+        <div class="tag">Mi respuesta</div>
+        <div id="respuestaTexto"></div>
+      </div>
 
       <div class="small-text">
         *Algunas respuestas solo se desbloquean en persona 😎
@@ -189,5 +185,28 @@
       Hecho con cariño en Python & Flask 🐍 · by Miguel
     </div>
   </div>
+
+<script>
+function updateChat() {
+    fetch("/estado")
+    .then(response => response.json())
+    .then(data => {
+        if (data.pregunta) {
+            document.getElementById("preguntaTexto").innerText = data.pregunta;
+            document.getElementById("preguntaBox").style.display = "block";
+        }
+
+        if (data.respuesta) {
+            document.getElementById("respuestaTexto").innerText = data.respuesta;
+            document.getElementById("respuestaBox").style.display = "block";
+        }
+    });
+}
+
+// actualizar cada 2 segundos
+setInterval(updateChat, 2000);
+updateChat();
+</script>
+
 </body>
 </html>

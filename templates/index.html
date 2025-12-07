@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <title>Ketzally App 💜</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <style>
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: linear-gradient(135deg, #1c1b29, #4b2c5e);
+      color: #fff;
+      display: flex;
+      min-height: 100vh;
+      justify-content: center;
+      align-items: center;
+      padding: 16px;
+    }
+
+    .card {
+      background: rgba(0, 0, 0, 0.35);
+      border-radius: 16px;
+      padding: 24px;
+      max-width: 480px;
+      width: 100%;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+      backdrop-filter: blur(10px);
+    }
+
+    h1 {
+      margin-top: 0;
+      font-size: 1.9rem;
+      text-align: center;
+    }
+
+    h1 span {
+      color: #ff9bd2;
+    }
+
+    p.sub {
+      margin-top: -8px;
+      text-align: center;
+      font-size: 0.95rem;
+      opacity: 0.85;
+    }
+
+    .section-title {
+      margin-top: 18px;
+      font-size: 1rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      opacity: 0.9;
+    }
+
+    .buttons {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    button {
+      border: none;
+      border-radius: 999px;
+      padding: 10px 14px;
+      font-size: 0.9rem;
+      cursor: pointer;
+      background: #ff9bd2;
+      color: #2a1430;
+      font-weight: 600;
+      transition: transform 0.1s ease, box-shadow 0.1s ease, background 0.2s ease;
+    }
+
+    button:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+      background: #ffc3e3;
+    }
+
+    .output {
+      margin-top: 14px;
+      padding: 12px 14px;
+      border-radius: 12px;
+      background: rgba(255,255,255,0.06);
+      font-size: 0.95rem;
+      line-height: 1.4;
+    }
+
+    .tag {
+      display: inline-block;
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      opacity: 0.7;
+      margin-bottom: 4px;
+    }
+
+    .question-box {
+      margin-top: 18px;
+    }
+
+    .question-box textarea {
+      width: 100%;
+      border-radius: 12px;
+      padding: 10px;
+      border: none;
+      resize: vertical;
+      min-height: 60px;
+      font-family: inherit;
+      font-size: 0.9rem;
+      outline: none;
+    }
+
+    .small-text {
+      font-size: 0.8rem;
+      opacity: 0.75;
+      margin-top: 4px;
+    }
+
+    .footer {
+      margin-top: 18px;
+      font-size: 0.75rem;
+      text-align: center;
+      opacity: 0.7;
+    }
+
+    form {
+      margin: 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Hola <span>Ketzally</span> 💜</h1>
+    <p class="sub">Esta es una mini app hecha solo para ti. Juega con las emociones y hazme preguntas.</p>
+
+    <!-- Sección emociones -->
+    <div>
+      <div class="section-title">1. Elige una emoción</div>
+      <form method="post">
+        <div class="buttons">
+          <button type="submit" name="emocion" value="ternura">Ternura 🫶</button>
+          <button type="submit" name="emocion" value="risa">Risa 😂</button>
+          <button type="submit" name="emocion" value="picante">Picante 😏</button>
+          <button type="submit" name="emocion" value="sorpresa">Sorpresa 🎁</button>
+        </div>
+      </form>
+
+      {% if frase_generada %}
+        <div class="output">
+          <div class="tag">Mensaje generado</div>
+          <div>{{ frase_generada }}</div>
+        </div>
+      {% endif %}
+    </div>
+
+    <!-- Sección preguntas -->
+    <div class="question-box">
+      <div class="section-title">2. Pregúntale a Miguel</div>
+      <form method="post">
+        <textarea name="pregunta" placeholder="Escribe aquí tu pregunta para mí..."></textarea>
+        <div style="margin-top: 8px; text-align: right;">
+          <button type="submit">Enviar pregunta 💌</button>
+        </div>
+      </form>
+
+      {% if pregunta_ketzally %}
+        <div class="output">
+          <div class="tag">Tu pregunta</div>
+          <div>{{ pregunta_ketzally }}</div>
+        </div>
+      {% endif %}
+
+      {% if respuesta_pregunta %}
+        <div class="output">
+          <div class="tag">Mi respuesta</div>
+          <div>{{ respuesta_pregunta }}</div>
+        </div>
+      {% endif %}
+
+      <div class="small-text">
+        *Algunas respuestas solo se desbloquean en persona 😎
+      </div>
+    </div>
+
+    <div class="footer">
+      Hecho con cariño en Python & Flask 🐍 · by Miguel
+    </div>
+  </div>
+</body>
+</html>

@@ -167,12 +167,12 @@
       </form>
 
       <div class="output" id="preguntaBox" style="display:none;">
-        <div class="tag">Tu pregunta</div>
+        <div class="tag">Tú (Ketzally) preguntaste</div>
         <div id="preguntaTexto"></div>
       </div>
 
       <div class="output" id="respuestaBox" style="display:none;">
-        <div class="tag">Mi respuesta</div>
+        <div class="tag">Miguel respondió</div>
         <div id="respuestaTexto"></div>
       </div>
 
@@ -200,7 +200,7 @@ function updateChat() {
             document.getElementById("respuestaTexto").innerText = data.respuesta;
             document.getElementById("respuestaBox").style.display = "block";
         }
-    });
+    }).catch(() => {});
 }
 
 // actualizar cada 2 segundos

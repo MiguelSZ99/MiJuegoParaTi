@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, jsonify
+from flask import Flask, render_template, request, jsonify
 import random
 import json
 import os
@@ -47,20 +47,15 @@ EMOCIONES = {
     ]
 }
 
-# Archivo donde guardamos la última pregunta y respuesta
 DATA_FILE = "data.json"
 
 
 def load_state():
-    """
-    Lee la última pregunta y respuesta desde data.json.
-    Si el archivo está corrupto o con mala codificación, regresa valores por defecto.
-    """
+    """Lee la última pregunta y respuesta desde data.json."""
     if not os.path.exists(DATA_FILE):
         return {"pregunta": None, "respuesta": None}
 
     try:
-        # errors="ignore" para evitar que reviente por bytes raros (como el 0xff)
         with open(DATA_FILE, "r", encoding="utf-8", errors="ignore") as f:
             data = json.load(f)
     except (json.JSONDecodeError, OSError, UnicodeDecodeError, ValueError):
@@ -75,7 +70,7 @@ def load_state():
 
 
 def save_state(pregunta, respuesta):
-    """Guarda la última pregunta y respuesta en data.json en UTF-8 limpio."""
+    """Guarda la última pregunta y respuesta en data.json."""
     data = {"pregunta": pregunta, "respuesta": respuesta}
     with open(DATA_FILE, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False)
@@ -83,6 +78,7 @@ def save_state(pregunta, respuesta):
 
 @app.route("/", methods=["GET", "POST"])
 def index():
+    # Página de Ketzally
     state = load_state()
     pregunta_ketzally = state["pregunta"]
     respuesta_pregunta = state["respuesta"]
@@ -91,18 +87,16 @@ def index():
     frase_generada = None
 
     if request.method == "POST":
-        # Botones de emoción
         if "emocion" in request.form:
             emocion_seleccionada = request.form["emocion"]
             if emocion_seleccionada in EMOCIONES:
                 frase_generada = random.choice(EMOCIONES[emocion_seleccionada])
 
-        # Pregunta de Ketzally
         elif "pregunta" in request.form:
             pregunta = request.form["pregunta"].strip()
             if pregunta:
                 pregunta_ketzally = pregunta
-                respuesta_pregunta = None  # borramos la anterior para que esperes contestar tú
+                respuesta_pregunta = None
                 save_state(pregunta_ketzally, respuesta_pregunta)
 
     return render_template(
@@ -117,7 +111,8 @@ def index():
 @app.route("/miguel", methods=["GET", "POST"])
 def miguel():
     """
-    Página solo para ti, donde lees la pregunta y escribes tu respuesta.
+    Página solo para ti, Miguel.
+    NO TE MANDA A LA DE ELLA NUNCA.
     """
     state = load_state()
     pregunta_ketzally = state["pregunta"]
@@ -128,8 +123,12 @@ def miguel():
         if respuesta:
             respuesta_pregunta = respuesta
             save_state(pregunta_ketzally, respuesta_pregunta)
-            # Después de guardar la respuesta, te manda a la página principal
-            return redirect(url_for("index"))
+            # IMPORTANTE: NO redirect, te quedas en /miguel
+
+    # Recargar estado después de guardar
+    state = load_state()
+    pregunta_ketzally = state["pregunta"]
+    respuesta_pregunta = state["respuesta"]
 
     return render_template(
         "miguel.html",
@@ -140,10 +139,7 @@ def miguel():
 
 @app.route("/estado")
 def estado():
-    """
-    Devuelve la última pregunta y respuesta en JSON,
-    para que el front las pueda consultar y actualizar sin recargar.
-    """
+    """Devuelve la última pregunta y respuesta en JSON."""
     state = load_state()
     return jsonify(state)
 

@@ -1,15 +1,28 @@
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, redirect, url_for
 import random
 import json
 import os
 
 app = Flask(__name__)
 
-# Frases por emoción (IGUAL que las que ya tenías)
+# ==========================
+#  CONFIGURACIÓN
+# ==========================
+
+DATA_1 = "data_app1.json"   # persona anterior
+DATA_2 = "data_app2.json"   # chat nuevo (para ella)
+MAX_MENSAJES = 8            # últimos mensajes que se guardan
+
+
+# ==========================
+#  FRASES POR EMOCIÓN
+#  (sin nombres, igual de alfas)
+# ==========================
+
 EMOCIONES = {
     "ternura": [
-        "Si existiera un botón para verte esos ojos ya lo hubiera roto por ti Ketsally",
-        "Contigo no sé si hablar normal o tratarte bonito ya el tiempo lo dira",
+        "Si existiera un botón para verte esos ojos ya lo hubiera roto por ti.",
+        "Contigo no sé si hablar normal o tratarte bonito, ya el tiempo lo dirá.",
         "No sé si eres buena idea o mala idea… pero sí sé que me interesa averiguarlo.",
         "Hay mensajes bonitos… y luego está ese que espero que me mandes tú 😏",
         "A veces las conexiones llegan sin aviso… y esta se siente interesante."
@@ -19,7 +32,6 @@ EMOCIONES = {
         "Si te hago reír 3 veces seguidas, me debes un abrazo.",
         "Si sigues aquí es porque te gusto… o porque no tienes nada mejor que hacer, ambas me sirven 😂",
         "Tranquila, no muerdo… bueno… depende de la situación 😈",
-        "Si tienes buen sentido del humor, cuidado… porque luego eso se combina con química y ya sabes",
         "Yo soy como las notificaciones inesperadas: aparezco, sonríes y ya te distraigo 😎",
         "Prometo portarme bien… hasta que tú empieces con indirectas 😏",
         "Si te vuelves adicta a hablar conmigo… no es mi culpa, es mi talento 😌",
@@ -28,7 +40,7 @@ EMOCIONES = {
     ],
     "picante": [
         "Si te digo todo lo que quiero hacer cuando te vea… esta app se vuelve +18 😏",
-        "De todas mis distracciones, tu puedes ser una de mis favoritas.",
+        "De todas mis distracciones, tú puedes ser una de mis favoritas.",
         "No te voy a perseguir… pero si tú te acercas, tampoco me voy a hacer el santo 😌",
         "No soy intenso, soy claro, lo demás se descubre con calma… o sin ella 😏",
         "Si supieras lo que estoy pensando… estarías sonriendo nerviosa ahora mismo.",
@@ -38,111 +50,146 @@ EMOCIONES = {
         "No corro… pero tampoco voy lento. Yo voy al ritmo donde la cosa se pone peligrosa 😈"
     ],
     "sorpresa": [
-        "Sorpresa: si llegaste hasta aquí, oficialmente se que te empiezo a gustar. Ya no hay reembolso.",
+        "Sorpresa: si llegaste hasta aquí, oficialmente sé que te empiezo a gustar. Ya no hay reembolso.",
         "Se rumora que quien lee esto debería aceptar una cita conmigo.",
-        "No estoy tratando de impresionarte Ketzally, estoy observando si tú vales mi tiempo.",
+        "No estoy tratando de impresionarte, estoy observando si tú vales mi tiempo.",
         "Si crees que ya me entendiste… estás lejos. Y por eso sigues aquí 😌",
         "No te voy a advertir nada… prefiero que lo descubras y luego entiendas por qué te avisé tarde 🔥",
-        "Si ya sientes la curiosidad… no la frenes"
+        "Si ya sientes la curiosidad… no la frenes."
     ]
 }
 
-DATA_FILE = "data.json"
 
+# ==========================
+#  MANEJO DE ESTADO (JSON)
+# ==========================
 
-def load_state():
-    """Lee la última pregunta y respuesta desde data.json."""
-    if not os.path.exists(DATA_FILE):
-        return {"pregunta": None, "respuesta": None}
+def load_state(file_path):
+    """Carga historial desde el JSON correspondiente a cada app."""
+    if not os.path.exists(file_path):
+        return {"historial": []}
 
     try:
-        with open(DATA_FILE, "r", encoding="utf-8", errors="ignore") as f:
+        with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
             data = json.load(f)
-    except (json.JSONDecodeError, OSError, UnicodeDecodeError, ValueError):
-        data = {"pregunta": None, "respuesta": None}
+    except Exception:
+        data = {"historial": []}
 
-    if "pregunta" not in data:
-        data["pregunta"] = None
-    if "respuesta" not in data:
-        data["respuesta"] = None
+    if "historial" not in data or not isinstance(data["historial"], list):
+        data["historial"] = []
 
     return data
 
 
-def save_state(pregunta, respuesta):
-    """Guarda la última pregunta y respuesta en data.json."""
-    data = {"pregunta": pregunta, "respuesta": respuesta}
-    with open(DATA_FILE, "w", encoding="utf-8") as f:
+def save_state(file_path, historial):
+    """Guarda el historial (recorta a los últimos N mensajes)."""
+    data = {"historial": historial[-MAX_MENSAJES:]}
+    with open(file_path, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False)
 
 
-@app.route("/", methods=["GET", "POST"])
-def index():
-    # Página de Ketzally
-    state = load_state()
-    pregunta_ketzally = state["pregunta"]
-    respuesta_pregunta = state["respuesta"]
+# ==========================
+#  VISTAS GENÉRICAS
+# ==========================
 
-    emocion_seleccionada = None
+def app_view(file_path, estado_endpoint):
+    """
+    Vista genérica para la app de ella.
+    Cada app (1 o 2) llama a esto con su propio archivo y endpoint de estado.
+    """
+    state = load_state(file_path)
+    historial = state["historial"]
     frase_generada = None
 
     if request.method == "POST":
+        # Botones de emoción
         if "emocion" in request.form:
-            emocion_seleccionada = request.form["emocion"]
-            if emocion_seleccionada in EMOCIONES:
-                frase_generada = random.choice(EMOCIONES[emocion_seleccionada])
+            emo = request.form["emocion"]
+            if emo in EMOCIONES:
+                frase_generada = random.choice(EMOCIONES[emo])
 
+        # Pregunta de ella
         elif "pregunta" in request.form:
-            pregunta = request.form["pregunta"].strip()
-            if pregunta:
-                pregunta_ketzally = pregunta
-                respuesta_pregunta = None
-                save_state(pregunta_ketzally, respuesta_pregunta)
+            texto = request.form["pregunta"].strip()
+            if texto:
+                historial.append({"de": "ella", "texto": texto})
+                save_state(file_path, historial)
 
     return render_template(
         "index.html",
-        emocion_seleccionada=emocion_seleccionada,
         frase_generada=frase_generada,
-        pregunta_ketzally=pregunta_ketzally,
-        respuesta_pregunta=respuesta_pregunta
+        estado_url=url_for(estado_endpoint),
     )
 
 
-@app.route("/miguel", methods=["GET", "POST"])
-def miguel():
+def miguel_view(file_path, estado_endpoint, self_endpoint):
     """
-    Página solo para ti, Miguel.
-    NO TE MANDA A LA DE ELLA NUNCA.
+    Vista genérica para tu panel (Miguel).
     """
-    state = load_state()
-    pregunta_ketzally = state["pregunta"]
-    respuesta_pregunta = state["respuesta"]
+    state = load_state(file_path)
+    historial = state["historial"]
 
     if request.method == "POST":
         respuesta = request.form.get("respuesta", "").strip()
         if respuesta:
-            respuesta_pregunta = respuesta
-            save_state(pregunta_ketzally, respuesta_pregunta)
-            # IMPORTANTE: NO redirect, te quedas en /miguel
+            historial.append({"de": "miguel", "texto": respuesta})
+            save_state(file_path, historial)
 
-    # Recargar estado después de guardar
-    state = load_state()
-    pregunta_ketzally = state["pregunta"]
-    respuesta_pregunta = state["respuesta"]
+    # Volvemos a cargar (por si se recortó el historial)
+    state = load_state(file_path)
 
     return render_template(
         "miguel.html",
-        pregunta_ketzally=pregunta_ketzally,
-        respuesta_pregunta=respuesta_pregunta
+        estado_url=url_for(estado_endpoint),
+        post_url=url_for(self_endpoint),
     )
 
 
-@app.route("/estado")
-def estado():
-    """Devuelve la última pregunta y respuesta en JSON."""
-    state = load_state()
-    return jsonify(state)
+# ==========================
+#  RUTAS APP 1 (persona anterior)
+# ==========================
 
+@app.route("/", methods=["GET", "POST"])
+@app.route("/app1", methods=["GET", "POST"])
+def app1():
+    # Esta es la app que ya habías usado antes
+    return app_view(DATA_1, "estado1")
+
+
+@app.route("/miguel", methods=["GET", "POST"])
+@app.route("/miguel_app1", methods=["GET", "POST"])
+def miguel_app1():
+    # Panel tuyo para la persona anterior
+    return miguel_view(DATA_1, "estado1", "miguel_app1")
+
+
+@app.route("/estado1")
+def estado1():
+    return jsonify(load_state(DATA_1))
+
+
+# ==========================
+#  RUTAS APP 2 (chat nuevo, para ella)
+# ==========================
+
+@app.route("/app2", methods=["GET", "POST"])
+def app2():
+    # App nueva, link que le vas a pasar a ella
+    return app_view(DATA_2, "estado2")
+
+
+@app.route("/miguel_app2", methods=["GET", "POST"])
+def miguel_app2():
+    # Panel tuyo privado para este segundo chat
+    return miguel_view(DATA_2, "estado2", "miguel_app2")
+
+
+@app.route("/estado2")
+def estado2():
+    return jsonify(load_state(DATA_2))
+
+
+# ==========================
 
 if __name__ == "__main__":
     app.run(debug=True)

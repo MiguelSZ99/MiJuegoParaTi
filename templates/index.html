@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
   <meta charset="utf-8">
-  <title>Ketzally App 💜</title>
+  <title>App 💜</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
   <style>
@@ -80,11 +80,11 @@
     }
 
     .output {
-      margin-top: 14px;
-      padding: 12px 14px;
+      margin-top: 8px;
+      padding: 10px 12px;
       border-radius: 12px;
       background: rgba(255,255,255,0.06);
-      font-size: 0.95rem;
+      font-size: 0.9rem;
       line-height: 1.4;
     }
 
@@ -126,15 +126,21 @@
       opacity: 0.7;
     }
 
-    form {
-      margin: 0;
+    form { margin: 0; }
+
+    .chat-message.me {
+      border-left: 3px solid #ff9bd2;
+    }
+    .chat-message.him {
+      border-left: 3px solid #8ecdfc;
     }
   </style>
 </head>
+
 <body>
   <div class="card">
-    <h1>Hola <span>Ketzally</span> 💜</h1>
-    <p class="sub">Esta es una mini app hecha solo para ti. Juega con las emociones y hazme preguntas.</p>
+    <h1>Hola <span>❤️</span></h1>
+    <p class="sub">Juega con las emociones y hazme preguntas.</p>
 
     <!-- Sección emociones -->
     <div>
@@ -156,54 +162,71 @@
       {% endif %}
     </div>
 
-    <!-- Sección preguntas -->
+    <!-- Sección chat -->
     <div class="question-box">
-      <div class="section-title">2. Pregúntale a Miguel</div>
+      <div class="section-title">2. Chat</div>
+
       <form method="post">
-        <textarea name="pregunta" placeholder="Escribe aquí tu pregunta para mí..."></textarea>
+        <textarea name="pregunta" placeholder="Escribe aquí tu mensaje..."></textarea>
         <div style="margin-top: 8px; text-align: right;">
-          <button type="submit">Enviar pregunta 💌</button>
+          <button type="submit">Enviar 💌</button>
         </div>
       </form>
 
-      <div class="output" id="preguntaBox" style="display:none;">
-        <div class="tag">Tú (Ketzally) preguntaste</div>
-        <div id="preguntaTexto"></div>
-      </div>
-
-      <div class="output" id="respuestaBox" style="display:none;">
-        <div class="tag">Miguel respondió</div>
-        <div id="respuestaTexto"></div>
-      </div>
+      <div id="chatBox" style="margin-top:12px;"></div>
 
       <div class="small-text">
-        *Algunas respuestas solo se desbloquean en persona 😎
+        *Se muestran los últimos mensajes entre tú ❤️ y él 😎
       </div>
     </div>
 
     <div class="footer">
-      Hecho con cariño en Python & Flask 🐍 · by Miguel
+      Hecho con cariño en Python & Flask 🐍
     </div>
   </div>
 
 <script>
 function updateChat() {
-    fetch("/estado")
+    fetch("{{ estado_url }}")
     .then(response => response.json())
     .then(data => {
-        if (data.pregunta) {
-            document.getElementById("preguntaTexto").innerText = data.pregunta;
-            document.getElementById("preguntaBox").style.display = "block";
+        const chatBox = document.getElementById("chatBox");
+        chatBox.innerHTML = "";
+
+        if (!data.historial || data.historial.length === 0) {
+            const info = document.createElement("div");
+            info.className = "small-text";
+            info.textContent = "Aún no hay mensajes, escribe el primero 😉";
+            chatBox.appendChild(info);
+            return;
         }
 
-        if (data.respuesta) {
-            document.getElementById("respuestaTexto").innerText = data.respuesta;
-            document.getElementById("respuestaBox").style.display = "block";
-        }
+        data.historial.forEach(msg => {
+            const div = document.createElement("div");
+            div.classList.add("output", "chat-message");
+
+            const who = document.createElement("div");
+            who.className = "tag";
+            const text = document.createElement("div");
+            text.textContent = msg.texto;
+
+            if (msg.de === "ella") {
+                div.classList.add("me");
+                who.textContent = "Tú ❤️";
+            } else if (msg.de === "miguel") {
+                div.classList.add("him");
+                who.textContent = "Él 😎";
+            } else {
+                who.textContent = "Mensaje";
+            }
+
+            div.appendChild(who);
+            div.appendChild(text);
+            chatBox.appendChild(div);
+        });
     }).catch(() => {});
 }
 
-// actualizar cada 2 segundos
 setInterval(updateChat, 2000);
 updateChat();
 </script>
